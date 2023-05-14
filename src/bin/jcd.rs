@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::cmp::min;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::ffi::{OsStr, OsString};
 use std::fs::File;
 use std::io::Error;
@@ -61,7 +61,7 @@ fn main() {
     }
 
     // cut the key length for better readability
-    let mut result: BTreeMap<String, HashSet<Rc<String>>> = BTreeMap::new();
+    let mut result: BTreeMap<String, BTreeSet<Rc<String>>> = BTreeMap::new();
     name_to_sources
         .iter()
         .filter(|&(k, v)| {
@@ -75,7 +75,7 @@ fn main() {
             let packages: Vec<&str> = key.split("/").collect();
             let len = min(packages.len(), args.prefix_count);
             let cut_key = packages[0..len].join("/");
-            let duplicated_jar_name = result.entry(cut_key).or_insert(HashSet::new());
+            let duplicated_jar_name = result.entry(cut_key).or_insert(BTreeSet::new());
             crc_to_jar_name.iter().for_each(|m| {
                 m.1.into_iter().for_each(|jar_name| {
                     duplicated_jar_name.insert(jar_name.clone());
