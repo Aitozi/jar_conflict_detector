@@ -1,6 +1,22 @@
-- [x] 前缀黑名单
-- [ ] 多线程处理
-- [ ] 支持输出文件
-- [ ] 输出格式, json
-- [ ] benchmark
-- [x] 支持开启校验class CRC不同才判定为冲突class
+# jcd
+`jcd` is a simple command line tool to perform jar conflicts detector.
+
+# Example
+
+```shell
+jcd --jar-list "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude 
+```
+
+```shell
+jcd --jar-list "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude --disable-crc 
+```
+
+By default, the class only recognized as conflicted when it has the same class name and the crc number is not equal, 
+You can disable it by `--disable-crc`
+
+# Todo
+
+- [ ] Multi thread processing
+- [ ] Output to file
+- [ ] Specify the output format, eg: json
+- [ ] Maybe some benchmark
