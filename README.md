@@ -1,6 +1,6 @@
 - [x] 前缀黑名单
 - [ ] 多线程处理
 - [ ] 支持输出文件
-- [ ] 输出格式， json
+- [ ] 输出格式, json
 - [ ] benchmark
-- [ ] 支持开启校验class MD5不同才判定为冲突class
+- [x] 支持开启校验class CRC不同才判定为冲突class
