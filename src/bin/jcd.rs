@@ -17,21 +17,22 @@ use zip::ZipArchive;
 #[command(author, version, about, long_about = None)]
 struct Args {
     #[arg(
+        short,
         long = "jar-list",
         required = true,
         help = "The jar list joined by semicolon"
     )]
     jar_list: String,
 
-    #[arg(long, help = "Whether to disable the crc check", action = clap::ArgAction::SetTrue)]
+    #[arg(long, help = "Disable the crc check", action = clap::ArgAction::SetTrue)]
     #[arg(default_value_t = false)]
     disable_crc: bool,
 
-    #[arg(long, action = clap::ArgAction::Append, help = "The exclude package prefix")]
+    #[arg(short, long, action = clap::ArgAction::Append, help = "The exclude package prefix")]
     exclude: Vec<String>,
 
-    #[arg(long, help = "The output prefix package count")]
-    #[arg(default_value_t = 3)]
+    #[arg(short, long, help = "The output prefix package count")]
+    #[arg(default_value_t = usize::MAX)]
     prefix_count: usize,
 }
 
@@ -46,6 +47,7 @@ fn main() {
         return;
     }
 
+    // <class, <crc32, jar-list>>
     let mut name_to_sources: BTreeMap<Rc<String>, HashMap<u32, Vec<Rc<String>>>> = BTreeMap::new();
 
     // build all class to jar mapping
@@ -61,10 +63,10 @@ fn main() {
     }
 
     // cut the key length for better readability
-    let mut result: BTreeMap<String, BTreeSet<Rc<String>>> = BTreeMap::new();
+    let mut result: BTreeMap<Rc<String>, BTreeSet<Rc<String>>> = BTreeMap::new();
     name_to_sources
-        .iter()
-        .filter(|&(k, v)| {
+        .into_iter()
+        .filter(|(k, v)| {
             if args.disable_crc {
                 v.get(&MOCK_CRC_NUMBER).unwrap().len() >= 2
             } else {
@@ -72,9 +74,13 @@ fn main() {
             }
         })
         .for_each(|(key, crc_to_jar_name)| {
-            let packages: Vec<&str> = key.split("/").collect();
-            let len = min(packages.len(), args.prefix_count);
-            let cut_key = packages[0..len].join("/");
+            let cut_key = if args.prefix_count == usize::MAX {
+                key
+            } else {
+                let packages: Vec<&str> = key.split("/").collect();
+                let len = min(packages.len(), args.prefix_count);
+                Rc::new(packages[0..len].join("/"))
+            };
             let duplicated_jar_name = result.entry(cut_key).or_insert(BTreeSet::new());
             crc_to_jar_name.iter().for_each(|m| {
                 m.1.into_iter().for_each(|jar_name| {
