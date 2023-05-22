@@ -109,7 +109,12 @@ fn extract_class_filenames_from_jar(
     excludes: &Vec<String>,
     disable_crc: bool,
 ) {
-    let jar = File::open(path).unwrap();
+    let jar = match File::open(path) {
+        Ok(f) => f,
+        Err(e) => {
+            panic!("path: {} err: {}", path, e);
+        }
+    };
     let mut zip = ZipArchive::new(jar).unwrap();
 
     for i in 0..zip.len() {
