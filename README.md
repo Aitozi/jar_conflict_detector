@@ -1,14 +1,27 @@
 # jcd
-`jcd` is a simple command line tool to perform jar conflicts detector.
+```
+A simple command line tool to detector the conflict classes in jars
+
+Usage: jcd [OPTIONS] --jars <JAR_LIST>
+
+Options:
+  -j, --jars <JAR_LIST>        The jar list joined by semicolon
+      --disable-crc            Disable the crc check
+  -e, --exclude <EXCLUDE>      The exclude package prefix
+  -p, --prefix <PREFIX_COUNT>  The output prefix package count [default: 18446744073709551615]
+  -h, --help                   Print help
+  -V, --version                Print version
+
+```
 
 # Example
 
 ```shell
-jcd --jar-list "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude 
+jcd --jars "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude 
 ```
 
 ```shell
-jcd --jar-list "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude --disable-crc 
+jcd --jars "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude --disable-crc 
 ```
 
 By default, the class only recognized as conflicted when it has the same class name and the crc number is not equal, 

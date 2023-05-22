@@ -18,7 +18,7 @@ use zip::ZipArchive;
 struct Args {
     #[arg(
         short,
-        long = "jar-list",
+        long = "jars",
         required = true,
         help = "The jar list joined by semicolon"
     )]
@@ -31,7 +31,7 @@ struct Args {
     #[arg(short, long, action = clap::ArgAction::Append, help = "The exclude package prefix")]
     exclude: Vec<String>,
 
-    #[arg(short, long, help = "The output prefix package count")]
+    #[arg(short, long = "prefix", help = "The output prefix package count")]
     #[arg(default_value_t = usize::MAX)]
     prefix_count: usize,
 }
