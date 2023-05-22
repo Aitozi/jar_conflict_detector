@@ -30,10 +30,6 @@ struct Args {
 
     #[arg(short, long, action = clap::ArgAction::Append, help = "The exclude package prefix")]
     exclude: Vec<String>,
-
-    #[arg(short, long = "prefix", help = "The output prefix package count")]
-    #[arg(default_value_t = usize::MAX)]
-    prefix_count: usize,
 }
 
 const MOCK_CRC_NUMBER: u32 = 1;
@@ -62,9 +58,7 @@ fn main() {
         );
     }
 
-    // cut the key length for better readability
-    let mut result: BTreeMap<Rc<String>, BTreeSet<Rc<String>>> = BTreeMap::new();
-    name_to_sources
+    let mut result: BTreeMap<Rc<String>, HashMap<u32, Vec<Rc<String>>>> = name_to_sources
         .into_iter()
         .filter(|(k, v)| {
             if args.disable_crc {
@@ -73,21 +67,7 @@ fn main() {
                 v.len() >= 2
             }
         })
-        .for_each(|(key, crc_to_jar_name)| {
-            let cut_key = if args.prefix_count == usize::MAX {
-                key
-            } else {
-                let packages: Vec<&str> = key.split("/").collect();
-                let len = min(packages.len(), args.prefix_count);
-                Rc::new(packages[0..len].join("/"))
-            };
-            let duplicated_jar_name = result.entry(cut_key).or_insert(BTreeSet::new());
-            crc_to_jar_name.iter().for_each(|m| {
-                m.1.into_iter().for_each(|jar_name| {
-                    duplicated_jar_name.insert(jar_name.clone());
-                });
-            });
-        });
+        .collect();
 
     for (name, jar) in result {
         println!("{:?}, {:?}", name, jar)

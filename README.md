@@ -8,7 +8,6 @@ Options:
   -j, --jars <JAR_LIST>        The jar list joined by semicolon
       --disable-crc            Disable the crc check
   -e, --exclude <EXCLUDE>      The exclude package prefix
-  -p, --prefix <PREFIX_COUNT>  The output prefix package count [default: 18446744073709551615]
   -h, --help                   Print help
   -V, --version                Print version
 
