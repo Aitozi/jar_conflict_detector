@@ -21,11 +21,7 @@ Options:
 jcd --jars "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude 
 ```
 
-```shell
-jcd --jars "a.jar;b.jar" --exclude package1/to/exclude --exclude package2/to/exclude --disable-crc 
-```
-
-By default, the class only recognized as conflicted when it has the same class name but different size.
+By default, the class only recognized as conflicted when it has the same class name but with different size.
 It can be tuned to check crc number `-c crc` or disable check with `-c none`. 
 
 # Todo
