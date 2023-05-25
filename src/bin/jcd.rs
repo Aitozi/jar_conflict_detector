@@ -11,6 +11,7 @@ use std::{env, path};
 
 use clap::builder::Str;
 use clap::Parser;
+use zip::read::ZipFile;
 use zip::ZipArchive;
 
 #[derive(Parser, Debug)]
@@ -24,15 +25,22 @@ struct Args {
     )]
     jar_list: String,
 
-    #[arg(long, help = "Disable the crc check", action = clap::ArgAction::SetTrue)]
-    #[arg(default_value_t = false)]
-    disable_crc: bool,
+    #[arg(short, long)]
+    #[clap(value_enum, default_value_t = DistinctFrom::SIZE)]
+    check: DistinctFrom,
 
     #[arg(short, long, action = clap::ArgAction::Append, help = "The exclude package prefix")]
     exclude: Vec<String>,
 }
 
-const MOCK_CRC_NUMBER: u32 = 1;
+#[derive(clap::ValueEnum, Clone, Debug, PartialEq)]
+enum DistinctFrom {
+    CRC,
+    SIZE,
+    NONE,
+}
+
+const DISTINCT_FROM_NONE: u64 = 0;
 
 fn main() {
     let mut args = Args::parse();
@@ -44,28 +52,19 @@ fn main() {
     }
 
     // <class, <crc32, jar-list>>
-    let mut name_to_sources: BTreeMap<Rc<String>, HashMap<u32, Vec<Rc<String>>>> = BTreeMap::new();
+    let mut name_to_sources: BTreeMap<Rc<String>, HashMap<u64, Vec<Rc<String>>>> = BTreeMap::new();
 
     // build all class to jar mapping
     for x in paths {
         let jar_name = Rc::new(get_jar_name(x));
-        extract_class_filenames_from_jar(
-            &x,
-            &mut name_to_sources,
-            jar_name,
-            &args.exclude,
-            args.disable_crc,
-        );
+        extract_class_filenames_from_jar(&x, &mut name_to_sources, jar_name, &args);
     }
 
-    let mut result: BTreeMap<Rc<String>, HashMap<u32, Vec<Rc<String>>>> = name_to_sources
+    let mut result: BTreeMap<Rc<String>, HashMap<u64, Vec<Rc<String>>>> = name_to_sources
         .into_iter()
-        .filter(|(k, v)| {
-            if args.disable_crc {
-                v.get(&MOCK_CRC_NUMBER).unwrap().len() >= 2
-            } else {
-                v.len() >= 2
-            }
+        .filter(|(k, v)| match args.check {
+            DistinctFrom::NONE => v.get(&DISTINCT_FROM_NONE).unwrap().len() >= 2,
+            _ => v.len() >= 2,
         })
         .collect();
 
@@ -84,10 +83,9 @@ fn get_jar_name(path: &str) -> String {
 
 fn extract_class_filenames_from_jar(
     path: &str,
-    name_to_sources: &mut BTreeMap<Rc<String>, HashMap<u32, Vec<Rc<String>>>>,
+    name_to_sources: &mut BTreeMap<Rc<String>, HashMap<u64, Vec<Rc<String>>>>,
     jar_name: Rc<String>,
-    excludes: &Vec<String>,
-    disable_crc: bool,
+    args: &Args,
 ) {
     let jar = match File::open(path) {
         Ok(f) => f,
@@ -100,33 +98,37 @@ fn extract_class_filenames_from_jar(
     for i in 0..zip.len() {
         let mut zip_entry = zip.by_index(i).unwrap();
         let name = zip_entry.name();
-        if filter(name, excludes) {
-            let zip_file_crc32 = if !disable_crc {
-                zip_entry.crc32()
-            } else {
-                MOCK_CRC_NUMBER
-            };
+        if filter(name, &args.exclude) {
+            let distinct_from = get_distinct_from(&zip_entry, args);
             match name_to_sources.get_mut(&name.to_string()) {
-                Some(entries) => match entries.get_mut(&zip_file_crc32) {
+                Some(entries) => match entries.get_mut(&distinct_from) {
                     Some(v) => {
                         v.push(jar_name.clone());
                     }
                     None => {
                         let mut v = Vec::new();
                         v.push(jar_name.clone());
-                        entries.insert(zip_file_crc32, v);
+                        entries.insert(distinct_from, v);
                     }
                 },
                 None => {
                     let mut v = Vec::new();
                     v.push(jar_name.clone());
                     let mut entry = HashMap::new();
-                    entry.insert(zip_file_crc32, v);
+                    entry.insert(distinct_from, v);
                     name_to_sources.insert(Rc::new(name.to_string()), entry);
                 }
             }
         }
     }
+}
+
+fn get_distinct_from(zip: &ZipFile, arg: &Args) -> u64 {
+    return match arg.check {
+        DistinctFrom::CRC => zip.crc32() as u64,
+        DistinctFrom::SIZE => zip.size(),
+        DistinctFrom::NONE => DISTINCT_FROM_NONE,
+    };
 }
 
 fn filter(name: &str, excludes: &Vec<String>) -> bool {
@@ -143,4 +145,26 @@ fn filter(name: &str, excludes: &Vec<String>) -> bool {
         }
     }
     return true;
+}
+
+#[test]
+fn test_parse() {
+    // https://stackoverflow.com/questions/74465951/how-to-parse-custom-string-with-clap-derive
+    // https://github.com/clap-rs/clap/discussions/4517
+    // first argument is binary name
+    let args = Args::parse_from(["", "--jars", "a.jar;b.jar"]);
+    assert_eq!(args.check, DistinctFrom::SIZE);
+    assert!(args.exclude.is_empty());
+
+    let args = Args::try_parse_from([""]);
+    assert!(args.is_err());
+
+    let args = Args::parse_from(["", "--jars", "a.jar", "-c", "crc"]);
+    assert_eq!(args.check, DistinctFrom::CRC);
+
+    let args = Args::parse_from(["", "--jars", "a.jar", "-c", "none"]);
+    assert_eq!(args.check, DistinctFrom::NONE);
+
+    let args = Args::try_parse_from(["", "--jars", "a.jar", "-c", "none1"]);
+    assert!(args.is_err());
 }
