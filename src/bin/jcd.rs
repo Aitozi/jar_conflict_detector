@@ -29,14 +29,14 @@ struct Args {
     #[clap(value_enum, default_value_t = DistinctFrom::SIZE)]
     check: DistinctFrom,
 
-    #[arg(short, long, action = clap::ArgAction::Append, help = "The exclude package prefix")]
+    #[arg(short, long, action = clap::ArgAction::Append, help = "The exclude package prefix, can be declared multiple times")]
     exclude: Vec<String>,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, PartialEq)]
 enum DistinctFrom {
-    CRC,
     SIZE,
+    CRC,
     NONE,
 }
 

@@ -1,16 +1,15 @@
 # jcd
 
-A simple command line tool to detector the potential conflict classes in jars. 
+A simple command line tool to detector the potential conflicted classes in jars
 The similar tool called [jarfish](https://code.google.com/archive/p/jarfish/wikis/Intro.wiki) in java.
 
 ```
-
 Usage: jcd [OPTIONS] --jars <JAR_LIST>
 
 Options:
   -j, --jars <JAR_LIST>    The jar list joined by semicolon
-  -c, --check <CHECK>      [default: size] [possible values: crc, size, none]
-  -e, --exclude <EXCLUDE>  The exclude package prefix
+  -c, --check <CHECK>      [default: size] [possible values: size, crc, none]
+  -e, --exclude <EXCLUDE>  The exclude package prefix, can be declared multiple times
   -h, --help               Print help
   -V, --version            Print version
 

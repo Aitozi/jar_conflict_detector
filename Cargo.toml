@@ -3,7 +3,7 @@ name = "jar_conflict_detecter"
 version = "0.1.0"
 edition = "2021"
 authors = ["aitozi <gjying1314@gmail.com>"]
-description = "A simple command line tool to detector the conflict classes in jars"
+description = "A simple command line tool to detector the potential conflicted classes in jars"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
