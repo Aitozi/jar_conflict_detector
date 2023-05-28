@@ -74,7 +74,8 @@ jobs:
             SUFFIX=""
           fi
           mkdir "$DIRECTORY"
-          cp CHANGELOG.md LICENSE README.md "target/${{ matrix.target }}/release/jcd$SUFFIX" "$DIRECTORY"
+          #cp CHANGELOG.md LICENSE README.md "target/${{ matrix.target }}/release/jcd$SUFFIX" "$DIRECTORY"
+          cp README.md "target/${{ matrix.target }}/release/jcd$SUFFIX" "$DIRECTORY"
           7z a "$DIRECTORY.zip" "$DIRECTORY"
           echo "path=$DIRECTORY.zip" >> $GITHUB_OUTPUT
       - env:
