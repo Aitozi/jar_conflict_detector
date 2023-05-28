@@ -1,5 +1,5 @@
 [package]
-name = "jar_conflict_detecter"
+name = "jar_conflict_detector"
 version = "0.0.1"
 edition = "2021"
 authors = ["aitozi <gjying1314@gmail.com>"]
