@@ -1,15 +1,9 @@
-use std::cell::RefCell;
-use std::cmp::min;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::ffi::{OsStr, OsString};
+use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::Error;
 use std::path::Path;
 use std::rc::Rc;
 use std::string::String;
-use std::{env, path};
 
-use clap::builder::Str;
 use clap::Parser;
 use zip::read::ZipFile;
 use zip::ZipArchive;
@@ -26,7 +20,7 @@ struct Args {
     jar_list: String,
 
     #[arg(short, long)]
-    #[clap(value_enum, default_value_t = DistinctFrom::SIZE)]
+    #[clap(value_enum, default_value_t = DistinctFrom::Size)]
     check: DistinctFrom,
 
     #[arg(short, long, action = clap::ArgAction::Append, help = "The exclude package prefix, can be declared multiple times")]
@@ -35,17 +29,17 @@ struct Args {
 
 #[derive(clap::ValueEnum, Clone, Debug, PartialEq)]
 enum DistinctFrom {
-    SIZE,
-    CRC,
-    NONE,
+    Size,
+    Crc,
+    None,
 }
 
 const DISTINCT_FROM_NONE: u64 = 0;
 
 fn main() {
-    let mut args = Args::parse();
+    let args = Args::parse();
 
-    let paths: Vec<_> = args.jar_list.split(";").collect();
+    let paths: Vec<_> = args.jar_list.split(';').collect();
     if paths.len() < 2 {
         println!("No conflict class found");
         return;
@@ -57,13 +51,13 @@ fn main() {
     // build all class to jar mapping
     for x in paths {
         let jar_name = Rc::new(get_jar_name(x));
-        extract_class_filenames_from_jar(&x, &mut name_to_sources, jar_name, &args);
+        extract_class_filenames_from_jar(x, &mut name_to_sources, jar_name, &args);
     }
 
-    let mut result: BTreeMap<Rc<String>, HashMap<u64, Vec<Rc<String>>>> = name_to_sources
+    let result: BTreeMap<Rc<String>, HashMap<u64, Vec<Rc<String>>>> = name_to_sources
         .into_iter()
-        .filter(|(k, v)| match args.check {
-            DistinctFrom::NONE => v.get(&DISTINCT_FROM_NONE).unwrap().len() >= 2,
+        .filter(|(_k, v)| match args.check {
+            DistinctFrom::None => v.get(&DISTINCT_FROM_NONE).unwrap().len() >= 2,
             _ => v.len() >= 2,
         })
         .collect();
@@ -96,7 +90,7 @@ fn extract_class_filenames_from_jar(
     let mut zip = ZipArchive::new(jar).unwrap();
 
     for i in 0..zip.len() {
-        let mut zip_entry = zip.by_index(i).unwrap();
+        let zip_entry = zip.by_index(i).unwrap();
         let name = zip_entry.name();
         if filter(name, &args.exclude) {
             let distinct_from = get_distinct_from(&zip_entry, args);
@@ -106,14 +100,12 @@ fn extract_class_filenames_from_jar(
                         v.push(jar_name.clone());
                     }
                     None => {
-                        let mut v = Vec::new();
-                        v.push(jar_name.clone());
+                        let v = vec![jar_name.clone()];
                         entries.insert(distinct_from, v);
                     }
                 },
                 None => {
-                    let mut v = Vec::new();
-                    v.push(jar_name.clone());
+                    let v = vec![jar_name.clone()];
                     let mut entry = HashMap::new();
                     entry.insert(distinct_from, v);
                     name_to_sources.insert(Rc::new(name.to_string()), entry);
@@ -124,11 +116,11 @@ fn extract_class_filenames_from_jar(
 }
 
 fn get_distinct_from(zip: &ZipFile, arg: &Args) -> u64 {
-    return match arg.check {
-        DistinctFrom::CRC => zip.crc32() as u64,
-        DistinctFrom::SIZE => zip.size(),
-        DistinctFrom::NONE => DISTINCT_FROM_NONE,
-    };
+    match arg.check {
+        DistinctFrom::Crc => zip.crc32() as u64,
+        DistinctFrom::Size => zip.size(),
+        DistinctFrom::None => DISTINCT_FROM_NONE,
+    }
 }
 
 fn filter(name: &str, excludes: &Vec<String>) -> bool {
@@ -144,7 +136,7 @@ fn filter(name: &str, excludes: &Vec<String>) -> bool {
             return false;
         }
     }
-    return true;
+    true
 }
 
 #[test]
@@ -153,17 +145,17 @@ fn test_parse() {
     // https://github.com/clap-rs/clap/discussions/4517
     // first argument is binary name
     let args = Args::parse_from(["", "--jars", "a.jar;b.jar"]);
-    assert_eq!(args.check, DistinctFrom::SIZE);
+    assert_eq!(args.check, DistinctFrom::Size);
     assert!(args.exclude.is_empty());
 
     let args = Args::try_parse_from([""]);
     assert!(args.is_err());
 
     let args = Args::parse_from(["", "--jars", "a.jar", "-c", "crc"]);
-    assert_eq!(args.check, DistinctFrom::CRC);
+    assert_eq!(args.check, DistinctFrom::Crc);
 
     let args = Args::parse_from(["", "--jars", "a.jar", "-c", "none"]);
-    assert_eq!(args.check, DistinctFrom::NONE);
+    assert_eq!(args.check, DistinctFrom::None);
 
     let args = Args::try_parse_from(["", "--jars", "a.jar", "-c", "none1"]);
     assert!(args.is_err());
