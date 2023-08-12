@@ -41,7 +41,10 @@ fn main() {
 
     let paths: Vec<_> = args.jar_list.split(';').collect();
     if paths.len() < 2 {
-        println!("No conflict class found");
+        println!(
+            "Only have {:?} jar file. No conflict class detected.",
+            paths.len()
+        );
         return;
     }
 
